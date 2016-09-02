@@ -215,13 +215,29 @@ will be a sanitised version of the title, see
         (when (and target-filename
                    (null (string= target-filename this-filename)))
           (replace-match
-           (format "/%s.html" (endless/strip-date-from-filename target-filename))
+           (format "/%s" (endless/strip-date-from-filename target-filename))
            :fixedcase :literal nil 1))))))
   (goto-char (point-min))
   (outline-next-heading))
 
 (defun endless/strip-date-from-filename (name)
-  (replace-regexp-in-string "[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]-" "" name))
+  (let ((cnt 0))
+    (replace-regexp-in-string "[[:ascii:]]+"
+                              (map 'string #'(lambda (x)
+                                               (cond
+                                                ((and (<= cnt 2)
+                                                      (eq ?- x))
+                                                 (incf cnt) ?/)
+                                                (t x))) name) name)))
+
+(defun endless/make-this-string (name)
+  (concat (endless/date-dash-to-slash name)
+          (cl-subseq name 11)))
+
+(defun endless/date-dash-to-slash (name)
+  (mapconcat 'identity
+             (split-string (cl-subseq name 0 10) "-" t nil)
+             "/"))
 
 (defun endless/convert-tag (tag)
   "Overcome org-mode's tag limitations."
